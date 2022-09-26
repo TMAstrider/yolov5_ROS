@@ -7,11 +7,12 @@ from std_msgs.msg import Header
 from std_msgs.msg import String
 from sensor_msgs.msg import CompressedImage
 from sensor_msgs.msg import Image
+from geometry_msgs.msg import Twist
 IMAGE_WIDTH=1241
 IMAGE_HEIGHT=376
 
 import sys
-sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
+sys.path.remove('/opt/ros/melodic/lib/python2.7/dist-packages')
 
 
 
@@ -33,6 +34,7 @@ from matplotlib import pyplot as plt
 
 ros_image=0
 
+velocity = Twist()
 
 def letterbox(img, new_shape=(640, 640), color=(114, 114, 114), auto=True, scaleFill=False, scaleup=True):
     # Resize image to a 32-pixel-multiple rectangle https://github.com/ultralytics/yolov3/issues/232
@@ -75,6 +77,33 @@ def loadimg(img):  # 接受opencv图片
     img = np.ascontiguousarray(img)
     return path, img, img0, cap
 # src=cv2.imread('biye.jpg')
+
+# publish velocity DEF
+def do_velocity(img_width_do_velocity, img_height_do_velocity, box_center_x_do_velocity, box_center_y_do_velocity):
+    # nonlocal velocity
+    cenX = img_width_do_velocity / 2
+    cenY = img_height_do_velocity / 2
+    print(str(img_width_do_velocity) + ' , ' + str(img_height_do_velocity) + ' , ' + str(box_center_x_do_velocity) + ' , ' + str(box_center_y_do_velocity) + ' ')
+    print('Found Target: x = ' + str(box_center_x_do_velocity) + ', y = ' + str(box_center_y_do_velocity))
+
+    vx = abs(cenX - box_center_x_do_velocity) / cenX
+    vy = abs(cenY - box_center_y_do_velocity) / cenY
+
+    if box_center_x_do_velocity < cenX:
+        velocity.linear.x = vx
+    else:
+        velocity.linear.x = -vx
+    
+    if box_center_y_do_velocity < cenY:
+        velocity.linear.y = vy
+    else :
+        velocity.linear.y = -vy
+
+    print('发布速度 vx = ' + str(velocity.linear.x))
+    print('发布速度 vy = ' + str(velocity.linear.y))
+    velocity_vector_pub.publish(velocity)
+
+
 def detect(img):
 
     time1 = time.time()
@@ -134,7 +163,10 @@ def detect(img):
                     line = (cls, conf, *xywh) if save_conf else (cls, *xywh)  # label format
                 if view_img:  # Add bbox to image
                     label = '%s %.2f' % (names[int(cls)], conf)
-                    plot_one_box(xyxy, im0, label=label, color=[0,255,0], line_thickness=3)
+                    img_width, img_height, center_x, center_y = plot_one_box(xyxy, im0, label=label, color=[0,255,0], line_thickness=3)
+                    do_velocity(img_width, img_height, center_x, center_y)
+
+
     time4 = time.time()
     print('************')
     print('2-1', time2 - time1)
@@ -183,10 +215,15 @@ if __name__ == '__main__':
     模型初始化
     '''
     rospy.init_node('ros_yolo')
-    image_topic_1 = "/usb_cam/image_raw"
+    image_topic_1 = "/csi_cam_0/image_raw"
     rospy.Subscriber(image_topic_1, Image, image_callback_1, queue_size=1, buff_size=52428800)
     image_pub = rospy.Publisher('/yolo_result_out', Image, queue_size=1)
     #rospy.init_node("yolo_result_out_node", anonymous=True)
+
+    '''
+    modified
+    '''
+    velocity_vector_pub = rospy.Publisher('gi/set_pose/yolo_teleop', Twist, queue_size=10)
     
 
     rospy.spin()

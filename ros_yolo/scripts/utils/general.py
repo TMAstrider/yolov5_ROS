@@ -997,7 +997,28 @@ def plot_one_box(x, img, color=None, label=None, line_thickness=None):
         t_size = cv2.getTextSize(label, 0, fontScale=tl / 3, thickness=tf)[0]
         c2 = c1[0] + t_size[0], c1[1] - t_size[1] - 3
         cv2.rectangle(img, c1, c2, color, -1, cv2.LINE_AA)  # filled
+
+
+        img_size_flag = img.shape
+        width_flag = img_size_flag[1]
+        height_flag = img_size_flag[0]
+        left_x = int(x[0])
+        left_y = int(x[1])
+        right_x = int(x[2])
+        right_y = int(x[3])
+        print('宽是这么多：' + str(width_flag))
+        print('高是这么多：' + str(height_flag))
+        print('左上角的坐标为： ' + str(int(x[0])) + ' , ' + str(int(x[1])))
+        print('右下角的坐标为： ' + str(int(x[2])) + ' , ' + str(int(x[3])))
+        center_of_img_x = (int(x[0]) + int(x[2])) / 2
+        center_of_img_y = (int(x[1]) + int(x[3])) / 2
+        print('中心的坐标为： ' + str(center_of_img_x) + ' , ' + str(center_of_img_y) + '  ' + label)
+        print(type(label))
+
+
         cv2.putText(img, label, (c1[0], c1[1] - 2), 0, tl / 3, [225, 255, 255], thickness=tf, lineType=cv2.LINE_AA)
+
+        return width_flag, height_flag, center_of_img_x, center_of_img_y
 
 
 def plot_wh_methods():  # from utils.general import *; plot_wh_methods()
